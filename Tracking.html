@@ -3,22 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Location Tracker Links</title>
+    <title>Secure Link Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .gradient-bg {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
-        .link-card {
+        .card-hover {
             transition: all 0.3s ease;
-            border-left: 4px solid #667eea;
         }
-        .link-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
-        .location-marker {
+        .pulse {
             animation: pulse 2s infinite;
         }
         @keyframes pulse {
@@ -28,7 +27,337 @@
         }
     </style>
 </head>
-<body class="min-h-screen bg-gray-50">
+<body class="min-h-screen gradient-bg">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <div class="flex justify-center mb-6">
+                <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-2xl pulse">
+                    <i class="fas fa-link text-3xl text-purple-600"></i>
+                </div>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">Secure Link Tracker</h1>
+            <p class="text-xl text-white opacity-90">Create tracking links with location detection and auto-deletion</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-4xl mx-auto">
+            <!-- Create Link Section -->
+            <div class="bg-white rounded-2xl shadow-2xl p-6 mb-8 card-hover">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                    <i class="fas fa-plus-circle text-purple-600 mr-3"></i>
+                    Create New Tracking Link
+                </h2>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Link Destination URL</label>
+                    <div class="relative">
+                        <input type="url" id="destinationUrl" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                               placeholder="https://example.com" 
+                               required>
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                            <i class="fas fa-globe text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Link Name (Optional)</label>
+                    <input type="text" id="linkName" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                           placeholder="My Tracking Link">
+                </div>
+
+                <button onclick="createTrackingLink()" 
+                        class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 flex items-center justify-center">
+                    <i class="fas fa-bolt mr-2"></i>
+                    Generate Tracking Link
+                </button>
+            </div>
+
+            <!-- Generated Link Display -->
+            <div id="generatedLinkSection" class="hidden bg-white rounded-2xl shadow-2xl p-6 mb-8 card-hover">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-link text-green-600 mr-3"></i>
+                    Your Tracking Link
+                </h2>
+                <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                    <div class="flex items-center justify-between">
+                        <span id="generatedLink" class="text-sm md:text-base font-mono text-gray-800 break-all"></span>
+                        <button onclick="copyToClipboard()" class="ml-4 bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded-lg text-sm">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-600 flex items-center">
+                    <i class="fas fa-clock text-orange-500 mr-2"></i>
+                    This link will automatically delete in <span id="countdown">20:00</span>
+                </div>
+            </div>
+
+            <!-- Active Links Section -->
+            <div class="bg-white rounded-2xl shadow-2xl p-6">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                    <i class="fas fa-list text-blue-600 mr-3"></i>
+                    Active Tracking Links
+                </h2>
+                
+                <div id="activeLinks" class="space-y-4">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-inbox text-4xl mb-3"></i>
+                        <p>No active tracking links</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="text-center mt-12 text-white opacity-75">
+            <p>Created with <i class="fas fa-heart text-red-400"></i> - Links auto-delete after 20 minutes</p>
+        </footer>
+    </div>
+
+    <script>
+        // Initialize data storage
+        let trackingLinks = JSON.parse(localStorage.getItem('trackingLinks')) || [];
+        let deletionTimers = {};
+
+        // Generate UUID for unique tracking IDs
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        // Create a new tracking link
+        function createTrackingLink() {
+            const destinationUrl = document.getElementById('destinationUrl').value.trim();
+            const linkName = document.getElementById('linkName').value.trim() || 'Untitled Link';
+
+            if (!destinationUrl) {
+                alert('Please enter a destination URL');
+                return;
+            }
+
+            const trackingId = generateUUID();
+            const trackingUrl = `${window.location.origin}${window.location.pathname}?track=${trackingId}`;
+            
+            const newLink = {
+                id: trackingId,
+                name: linkName,
+                destination: destinationUrl,
+                trackingUrl: trackingUrl,
+                createdAt: new Date().toISOString(),
+                clicks: [],
+                expiresAt: new Date(Date.now() + 20 * 60 * 1000).toISOString()
+            };
+
+            trackingLinks.push(newLink);
+            localStorage.setItem('trackingLinks', JSON.stringify(trackingLinks));
+
+            // Show generated link
+            document.getElementById('generatedLink').textContent = trackingUrl;
+            document.getElementById('generatedLinkSection').classList.remove('hidden');
+
+            // Start countdown
+            startCountdown(newLink.expiresAt);
+
+            // Set deletion timer
+            deletionTimers[trackingId] = setTimeout(() => {
+                deleteLink(trackingId);
+            }, 20 * 60 * 1000);
+
+            updateActiveLinks();
+        }
+
+        // Start countdown timer
+        function startCountdown(expiresAt) {
+            const countdownElement = document.getElementById('countdown');
+            const targetTime = new Date(expiresAt).getTime();
+
+            function updateCountdown() {
+                const now = new Date().getTime();
+                const distance = targetTime - now;
+
+                if (distance <= 0) {
+                    countdownElement.textContent = '00:00';
+                    return;
+                }
+
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (distance > 0) {
+                    setTimeout(updateCountdown, 1000);
+                }
+            }
+
+            updateCountdown();
+        }
+
+        // Copy to clipboard
+        function copyToClipboard() {
+            const link = document.getElementById('generatedLink').textContent;
+            navigator.clipboard.writeText(link).then(() => {
+                alert('Link copied to clipboard!');
+            });
+        }
+
+        // Delete a tracking link
+        function deleteLink(trackingId) {
+            trackingLinks = trackingLinks.filter(link => link.id !== trackingId);
+            localStorage.setItem('trackingLinks', JSON.stringify(trackingLinks));
+            
+            if (deletionTimers[trackingId]) {
+                clearTimeout(deletionTimers[trackingId]);
+                delete deletionTimers[trackingId];
+            }
+
+            updateActiveLinks();
+        }
+
+        // Update active links display
+        function updateActiveLinks() {
+            const container = document.getElementById('activeLinks');
+            
+            if (trackingLinks.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-inbox text-4xl mb-3"></i>
+                        <p>No active tracking links</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = trackingLinks.map(link => {
+                const created = new Date(link.createdAt);
+                const expires = new Date(link.expiresAt);
+                const timeLeft = Math.max(0, expires - Date.now());
+                const minutesLeft = Math.floor(timeLeft / 60000);
+                
+                return `
+                    <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="font-semibold text-gray-800">${link.name}</h3>
+                                <p class="text-sm text-gray-600">${link.destination}</p>
+                            </div>
+                            <span class="bg-${minutesLeft < 5 ? 'red' : 'orange'}-100 text-${minutesLeft < 5 ? 'red' : 'orange'}-800 text-xs px-2 py-1 rounded-full">
+                                ${minutesLeft}m left
+                            </span>
+                        </div>
+                        
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-500">
+                                <i class="fas fa-mouse-pointer mr-1"></i>
+                                ${link.clicks.length} clicks
+                            </span>
+                            <div class="flex space-x-2">
+                                <button onclick="copyLink('${link.trackingUrl}')" class="text-blue-600 hover:text-blue-800">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                                <button onclick="deleteLink('${link.id}')" class="text-red-600 hover:text-red-800">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+
+                        ${link.clicks.length > 0 ? `
+                            <div class="mt-3 pt-3 border-t border-gray-200">
+                                <h4 class="font-medium text-sm text-gray-700 mb-2">Recent Clicks:</h4>
+                                ${link.clicks.slice(-3).map(click => `
+                                    <div class="text-xs text-gray-600 mb-1">
+                                        <i class="fas fa-map-marker-alt mr-1"></i>
+                                        ${click.location || 'Location unavailable'} - 
+                                        ${new Date(click.timestamp).toLocaleString()}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Copy specific link
+        function copyLink(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Link copied to clipboard!');
+            });
+        }
+
+        // Handle tracking URL parameter
+        function handleTracking() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const trackingId = urlParams.get('track');
+
+            if (trackingId) {
+                const link = trackingLinks.find(l => l.id === trackingId);
+                
+                if (link) {
+                    // Track the click with location
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const location = `${position.coords.latitude}, ${position.coords.longitude}`;
+                            link.clicks.push({
+                                timestamp: new Date().toISOString(),
+                                location: location,
+                                userAgent: navigator.userAgent
+                            });
+                            localStorage.setItem('trackingLinks', JSON.stringify(trackingLinks));
+                            window.location.href = link.destination;
+                        },
+                        (error) => {
+                            // Location access denied or unavailable
+                            link.clicks.push({
+                                timestamp: new Date().toISOString(),
+                                location: null,
+                                userAgent: navigator.userAgent
+                            });
+                            localStorage.setItem('trackingLinks', JSON.stringify(trackingLinks));
+                            window.location.href = link.destination;
+                        }
+                    );
+
+                    // Prevent further execution
+                    return;
+                }
+            }
+        }
+
+        // Initialize the application
+        function initApp() {
+            handleTracking();
+            updateActiveLinks();
+            
+            // Restart deletion timers for existing links
+            trackingLinks.forEach(link => {
+                const expiresAt = new Date(link.expiresAt).getTime();
+                const timeLeft = expiresAt - Date.now();
+                
+                if (timeLeft > 0) {
+                    deletionTimers[link.id] = setTimeout(() => {
+                        deleteLink(link.id);
+                    }, timeLeft);
+                } else {
+                    // Link has expired, delete it
+                    deleteLink(link.id);
+                }
+            });
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
+
     <!-- Header -->
     <header class="gradient-bg text-white py-8">
         <div class="container mx-auto px-4">
