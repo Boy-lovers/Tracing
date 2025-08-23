@@ -3,38 +3,431 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Link Tracker</title>
+    <title>LinkTracker Pro - Advanced URL Tracking Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        :root {
+            --primary: #2563eb;
+            --secondary: #1e40af;
+            --accent: #3b82f6;
+            --light: #f8fafc;
+            --dark: #1e293b;
         }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
         .card-hover {
             transition: all 0.3s ease;
         }
+        
         .card-hover:hover {
             transform: translateY(-5px);
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .tracking-link {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-family: monospace;
+            word-break: break-all;
+        }
+        
+        .map-container {
+            height: 300px;
+            background: #e5e7eb;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
         .pulse {
             animation: pulse 2s infinite;
         }
+        
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
-<body class="min-h-screen gradient-bg">
-    <div class="container mx-auto px-4 py-8">
+<body class="min-h-screen py-8 px-4">
+    <div class="max-w-6xl mx-auto">
         <!-- Header -->
         <header class="text-center mb-12">
-            <div class="flex justify-center mb-6">
-                <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-2xl pulse">
-                    <i class="fas fa-link text-3xl text-purple-600"></i>
+            <h1 class="text-4xl font-bold text-white mb-4">
+                <i class="fas fa-link mr-3"></i>LinkTracker Pro
+            </h1>
+            <p class="text-white/80 text-lg">Create tracking links that capture location data and analytics</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Sidebar - Stats -->
+            <div class="lg:col-span-1">
+                <div class="glass-effect rounded-2xl p-6 text-white mb-6">
+                    <h2 class="text-xl font-semibold mb-4">Dashboard Overview</h2>
+                    <div class="stats-grid">
+                        <div class="text-center p-4 bg-white/10 rounded-lg">
+                            <i class="fas fa-link text-2xl mb-2"></i>
+                            <div class="text-3xl font-bold" id="total-links">0</div>
+                            <div class="text-sm">Total Links</div>
+                        </div>
+                        <div class="text-center p-4 bg-white/10 rounded-lg">
+                            <i class="fas fa-eye text-2xl mb-2"></i>
+                            <div class="text-3xl font-bold" id="total-clicks">0</div>
+                            <div class="text-sm">Total Clicks</div>
+                        </div>
+                    </div>
                 </div>
+
+                <div class="glass-effect rounded-2xl p-6 text-white">
+                    <h2 class="text-xl font-semibold mb-4">Quick Actions</h2>
+                    <button onclick="showCreateForm()" class="w-full bg-white text-blue-600 py-2 px-4 rounded-lg font-semibold mb-3 hover:bg-blue-50 transition">
+                        <i class="fas fa-plus mr-2"></i>Create New Link
+                    </button>
+                    <button onclick="exportData()" class="w-full bg-white/10 text-white py-2 px-4 rounded-lg font-semibold hover:bg-white/20 transition">
+                        <i class="fas fa-download mr-2"></i>Export Data
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="lg:col-span-2">
+                <!-- Create Link Form -->
+                <div id="create-form" class="glass-effect rounded-2xl p-6 text-white mb-6">
+                    <h2 class="text-xl font-semibold mb-4">Create Tracking Link</h2>
+                    <form id="tracking-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Link Name</label>
+                            <input type="text" id="link-name" required 
+                                   class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white"
+                                   placeholder="e.g., Marketing Campaign A">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Destination URL</label>
+                            <input type="url" id="destination-url" required 
+                                   class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white"
+                                   placeholder="https://example.com" value="https://">
+                        </div>
+                        <div class="flex space-x-4">
+                            <button type="submit" class="flex-1 bg-white text-blue-600 py-2 px-4 rounded-lg font-semibold hover:bg-blue-50 transition">
+                                <i class="fas fa-magic mr-2"></i>Generate Link
+                            </button>
+                            <button type="button" onclick="hideCreateForm()" class="flex-1 bg-white/10 text-white py-2 px-4 rounded-lg font-semibold hover:bg-white/20 transition">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Generated Link Display -->
+                <div id="generated-link" class="glass-effect rounded-2xl p-6 text-white mb-6 hidden">
+                    <h2 class="text-xl font-semibold mb-4">Your Tracking Link is Ready!</h2>
+                    <div class="bg-white/10 rounded-lg p-4 mb-4">
+                        <div class="tracking-link mb-2" id="tracking-url"></div>
+                        <button onclick="copyToClipboard()" class="text-sm bg-white/20 text-white py-1 px-3 rounded hover:bg-white/30">
+                            <i class="fas fa-copy mr-1"></i>Copy Link
+                        </button>
+                    </div>
+                    <div class="text-sm text-white/80">
+                        <p><i class="fas fa-info-circle mr-2"></i>This link will capture location data, device info, and timestamp when clicked.</p>
+                    </div>
+                </div>
+
+                <!-- Tracking Links List -->
+                <div class="glass-effect rounded-2xl p-6 text-white">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold">Your Tracking Links</h2>
+                        <button onclick="refreshData()" class="text-white/80 hover:text-white">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    
+                    <div id="links-container" class="space-y-4">
+                        <div class="text-center py-8 text-white/60">
+                            <i class="fas fa-link text-4xl mb-4"></i>
+                            <p>No tracking links created yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize data storage
+        let trackingLinks = JSON.parse(localStorage.getItem('trackingLinks')) || [];
+        
+        // Check if this is a tracking link view
+        const urlParams = new URLSearchParams(window.location.search);
+        const trackId = urlParams.get('track');
+        
+        if (trackId) {
+            // This is a tracking link being opened - capture data
+            handleTrackingClick(trackId);
+        } else {
+            // Normal dashboard view
+            updateDashboard();
+            loadTrackingLinks();
+        }
+        
+        // Form submission
+        document.getElementById('tracking-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const linkName = document.getElementById('link-name').value;
+            const destinationUrl = document.getElementById('destination-url').value;
+            
+            // Generate unique ID
+            const trackId = generateUniqueId();
+            const trackingUrl = `${window.location.origin}${window.location.pathname}?track=${trackId}`;
+            
+            // Create tracking link object
+            const trackingLink = {
+                id: trackId,
+                name: linkName,
+                destination: destinationUrl,
+                trackingUrl: trackingUrl,
+                createdAt: new Date().toISOString(),
+                clicks: []
+            };
+            
+            // Save to storage
+            trackingLinks.push(trackingLink);
+            localStorage.setItem('trackingLinks', JSON.stringify(trackingLinks));
+            
+            // Show generated link
+            document.getElementById('tracking-url').textContent = trackingUrl;
+            document.getElementById('generated-link').classList.remove('hidden');
+            
+            // Update dashboard
+            updateDashboard();
+            loadTrackingLinks();
+            
+            // Reset form
+            this.reset();
+            document.getElementById('destination-url').value = 'https://';
+        });
+        
+        function generateUniqueId() {
+            return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        }
+        
+        function updateDashboard() {
+            const totalLinks = trackingLinks.length;
+            const totalClicks = trackingLinks.reduce((sum, link) => sum + link.clicks.length, 0);
+            
+            document.getElementById('total-links').textContent = totalLinks;
+            document.getElementById('total-clicks').textContent = totalClicks;
+        }
+        
+        function loadTrackingLinks() {
+            const container = document.getElementById('links-container');
+            
+            if (trackingLinks.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-white/60">
+                        <i class="fas fa-link text-4xl mb-4"></i>
+                        <p>No tracking links created yet</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = trackingLinks.map(link => `
+                <div class="card-hover bg-white/5 rounded-lg p-4">
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="font-semibold">${link.name}</h3>
+                        <span class="text-sm text-white/60">${formatDate(link.createdAt)}</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="text-sm text-white/80 mb-1">Destination:</div>
+                        <div class="text-sm truncate">${link.destination}</div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mb-3">
+                        <div class="text-sm">
+                            <i class="fas fa-mouse-pointer mr-1"></i> ${link.clicks.length} clicks
+                        </div>
+                        <button onclick="viewLinkDetails('${link.id}')" class="text-sm text-blue-300 hover:text-blue-100">
+                            View Details
+                        </button>
+                    </div>
+                    
+                    <div class="bg-white/10 rounded p-2">
+                        <div class="text-xs font-mono truncate">${link.trackingUrl}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function viewLinkDetails(linkId) {
+            const link = trackingLinks.find(l => l.id === linkId);
+            if (!link) return;
+            
+            const modalContent = `
+                <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                        <div class="p-6 border-b">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-xl font-semibold">${link.name}</h3>
+                                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="p-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <h4 class="font-semibold mb-2">Link Information</h4>
+                                    <div class="space-y-2 text-sm">
+                                        <div><strong>Created:</strong> ${formatDate(link.createdAt)}</div>
+                                        <div><strong>Clicks:</strong> ${link.clicks.length}</div>
+                                        <div><strong>Destination:</strong> ${link.destination}</div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <h4 class="font-semibold mb-2">Tracking URL</h4>
+                                    <div class="bg-gray-100 p-3 rounded text-sm font-mono break-all">
+                                        ${link.trackingUrl}
+                                    </div>
+                                    <button onclick="copySpecificLink('${link.trackingUrl}')" class="mt-2 text-sm text-blue-600 hover:text-blue-800">
+                                        Copy URL
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <h4 class="font-semibold mb-4">Click History (${link.clicks.length})</h4>
+                            
+                            ${link.clicks.length > 0 ? `
+                                <div class="space-y-3">
+                                    ${link.clicks.map(click => `
+                                        <div class="border rounded-lg p-3">
+                                            <div class="flex justify-between items-start mb-2">
+                                                <div class="font-medium">${formatDate(click.timestamp)}</div>
+                                                <div class="text-sm text-gray-600">
+                                                    ${click.location ? `${click.location.city || 'Unknown'}, ${click.location.country || 'Unknown'}` : 'Location unavailable'}
+                                                </div>
+                                            </div>
+                                            <div class="text-sm space-y-1">
+                                                <div>IP: ${click.ip || 'Unknown'}</div>
+                                                <div>Device: ${click.device || 'Unknown'}</div>
+                                                <div>Browser: ${click.browser || 'Unknown'}</div>
+                                                ${click.location ? `
+                                                    <div>Coordinates: ${click.location.latitude}, ${click.location.longitude}</div>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                    `).reverse().join('')}
+                                </div>
+                            ` : `
+                                <div class="text-center py-8 text-gray-500">
+                                    <i class="fas fa-mouse-pointer text-3xl mb-3"></i>
+                                    <p>No clicks recorded yet</p>
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const modal = document.createElement('div');
+            modal.innerHTML = modalContent;
+            document.body.appendChild(modal);
+        }
+        
+        function closeModal() {
+            const modal = document.querySelector('.fixed.inset-0');
+            if (modal) modal.remove();
+        }
+        
+        function copySpecificLink(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Link copied to clipboard!');
+            });
+        }
+        
+        function copyToClipboard() {
+            const url = document.getElementById('tracking-url').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Tracking link copied to clipboard!');
+            });
+        }
+        
+        function showCreateForm() {
+            document.getElementById('create-form').classList.remove('hidden');
+        }
+        
+        function hideCreateForm() {
+            document.getElementById('create-form').classList.add('hidden');
+            document.getElementById('generated-link').classList.add('hidden');
+        }
+        
+        function refreshData() {
+            trackingLinks = JSON.parse(localStorage.getItem('trackingLinks')) || [];
+            updateDashboard();
+            loadTrackingLinks();
+        }
+        
+        function exportData() {
+            const dataStr = JSON.stringify(trackingLinks, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = 'tracking-links.json';
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        }
+        
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString() + ' ' + new Date(dateString).toLocaleTimeString();
+        }
+        
+        async function handleTrackingClick(trackId) {
+            // Find the tracking link
+            const linkIndex = trackingLinks.findIndex(l => l.id === trackId);
+                       </div>
             </div>
             <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">Secure Link Tracker</h1>
             <p class="text-xl text-white opacity-90">Create tracking links with location detection and auto-deletion</p>
