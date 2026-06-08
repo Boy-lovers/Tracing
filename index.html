@@ -4,172 +4,437 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NachynTube - Premium Streaming</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* CSS RESET & BASE */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', Arial, sans-serif; }
-        body { background-color: #0f0f0f; color: white; overflow-x: hidden; }
+        :root {
+            --glass-bg: rgba(255,255,255,0.06);
+            --glass-border: rgba(255,255,255,0.12);
+            --glass-shadow: rgba(0,0,0,0.4);
+            --accent: #ff3b3b;
+            --accent-glow: rgba(255,59,59,0.5);
+            --accent2: #ff8c42;
+            --text: #f0f0f0;
+            --text-muted: rgba(255,255,255,0.5);
+        }
 
-        /* LOADING ANIMATION (ALA YOUTUBE) */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #080810;
+            color: var(--text);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* ── ANIMATED BACKGROUND ── */
+        .bg-orbs {
+            position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+        }
+        .orb {
+            position: absolute; border-radius: 50%;
+            filter: blur(80px); opacity: 0.18;
+            animation: orbFloat linear infinite;
+        }
+        .orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, #ff3b3b, transparent); top: -150px; left: -100px; animation-duration: 20s; }
+        .orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, #7b2fff, transparent); top: 40%; right: -120px; animation-duration: 25s; animation-delay: -8s; }
+        .orb-3 { width: 350px; height: 350px; background: radial-gradient(circle, #ff8c42, transparent); bottom: -100px; left: 30%; animation-duration: 18s; animation-delay: -5s; }
+        .orb-4 { width: 300px; height: 300px; background: radial-gradient(circle, #00c9ff, transparent); top: 20%; left: 50%; animation-duration: 22s; animation-delay: -12s; }
+
+        @keyframes orbFloat {
+            0%   { transform: translate(0,0) scale(1); }
+            33%  { transform: translate(40px,-30px) scale(1.08); }
+            66%  { transform: translate(-30px,50px) scale(0.95); }
+            100% { transform: translate(0,0) scale(1); }
+        }
+
+        /* Subtle grid overlay */
+        body::before {
+            content: '';
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* ── LOADER BAR ── */
         #loader-bar {
-            position: fixed; top: 0; left: 0; width: 0%; height: 3px;
-            background: red; z-index: 9999; transition: width 0.4s ease;
-            box-shadow: 0 0 10px red;
+            position: fixed; top: 0; left: 0; width: 0%; height: 2px; z-index: 9999;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            transition: width 0.4s ease;
+            box-shadow: 0 0 12px var(--accent-glow), 0 0 24px var(--accent-glow);
+        }
+        #loader-bar::after {
+            content: '';
+            position: absolute; right: 0; top: 50%;
+            transform: translateY(-50%);
+            width: 80px; height: 6px;
+            background: linear-gradient(90deg, transparent, var(--accent));
+            filter: blur(4px);
         }
 
-        /* NAVBAR */
+        /* ── NAVBAR ── */
         nav {
+            position: sticky; top: 0; z-index: 100;
             display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 25px; background: #0f0f0f; position: sticky; top: 0; z-index: 100;
+            padding: 12px 28px;
+            background: rgba(8,8,16,0.7);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border-bottom: 1px solid var(--glass-border);
+            box-shadow: 0 4px 32px rgba(0,0,0,0.5);
         }
-        .logo { font-size: 22px; font-weight: bold; color: white; display: flex; align-items: center; }
-        .logo span { background: red; color: white; padding: 2px 6px; border-radius: 5px; margin-left: 5px; }
 
-        .search-container { display: flex; width: 40%; }
+        .logo {
+            font-size: 22px; font-weight: 800;
+            letter-spacing: -0.5px;
+            display: flex; align-items: center; gap: 2px;
+            animation: logoIn 0.8s cubic-bezier(.2,.8,.2,1) both;
+        }
+        .logo-nachyn { color: #fff; }
+        .logo-tube {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: white; padding: 2px 8px; border-radius: 6px;
+            position: relative; overflow: hidden;
+        }
+        .logo-tube::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+            transform: translateX(-100%);
+            animation: logoShine 3s ease-in-out infinite;
+        }
+        @keyframes logoShine { 0%,70% { transform: translateX(-100%); } 80%,100% { transform: translateX(100%); } }
+        @keyframes logoIn { from { opacity:0; transform: translateX(-20px); } to { opacity:1; transform: translateX(0); } }
+
+        /* ── SEARCH ── */
+        .search-container {
+            display: flex; width: 42%;
+            animation: searchIn 0.8s cubic-bezier(.2,.8,.2,1) 0.15s both;
+        }
+        @keyframes searchIn { from { opacity:0; transform: translateY(-10px); } to { opacity:1; transform: translateY(0); } }
+
         .search-container input {
-            width: 100%; padding: 10px 15px; border: 1px solid #333;
-            background: #121212; color: white; border-radius: 20px 0 0 20px; outline: none;
+            flex: 1; padding: 10px 18px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--glass-border);
+            border-right: none;
+            color: white; font-family: 'Outfit', sans-serif; font-size: 14px;
+            border-radius: 24px 0 0 24px; outline: none;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        .search-container input::placeholder { color: var(--text-muted); }
+        .search-container input:focus {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,59,59,0.5);
+            box-shadow: 0 0 0 3px rgba(255,59,59,0.1), inset 0 0 20px rgba(255,255,255,0.03);
         }
         .search-container button {
-            padding: 0 20px; border: none; background: #333; color: white;
-            border-radius: 0 20px 20px 0; cursor: pointer;
+            padding: 10px 22px;
+            background: linear-gradient(135deg, var(--accent), #cc2200);
+            border: none; color: white; font-family: 'Outfit', sans-serif;
+            font-size: 14px; font-weight: 600;
+            border-radius: 0 24px 24px 0; cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative; overflow: hidden;
+        }
+        .search-container button::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transform: translateX(-100%); transition: transform 0.4s ease;
+        }
+        .search-container button:hover { background: linear-gradient(135deg, #ff5c5c, var(--accent)); box-shadow: 0 0 20px var(--accent-glow); }
+        .search-container button:hover::before { transform: translateX(100%); }
+        .search-container button:active { transform: scale(0.97); }
+
+        .nav-right { width: 100px; display: flex; justify-content: flex-end; }
+
+        /* ── MAIN CONTAINER ── */
+        .container {
+            position: relative; z-index: 1;
+            display: flex; flex-direction: column; align-items: center;
+            padding: 28px 20px;
         }
 
-        /* MAIN LAYOUT */
-        .container { display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        /* ── HERO / EMPTY STATE ── */
+        #hero {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 80px 20px; text-align: center;
+            animation: heroIn 1s cubic-bezier(.2,.8,.2,1) 0.3s both;
+        }
+        @keyframes heroIn { from { opacity:0; transform: translateY(30px); } to { opacity:1; transform: translateY(0); } }
 
-        /* VIDEO PLAYER SECTION */
+        .hero-icon {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border-radius: 22px; display: flex; align-items: center; justify-content: center;
+            font-size: 36px; margin-bottom: 24px;
+            box-shadow: 0 20px 60px rgba(255,59,59,0.35);
+            animation: heroIconPulse 3s ease-in-out infinite;
+        }
+        @keyframes heroIconPulse {
+            0%,100% { box-shadow: 0 20px 60px rgba(255,59,59,0.35); transform: translateY(0); }
+            50% { box-shadow: 0 30px 80px rgba(255,59,59,0.55); transform: translateY(-6px); }
+        }
+        #hero h1 { font-size: 42px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; }
+        #hero h1 span { background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        #hero p { margin-top: 12px; color: var(--text-muted); font-size: 16px; max-width: 400px; line-height: 1.6; }
+
+        /* ── VIDEO PLAYER ── */
         #video-display {
-            width: 100%; max-width: 900px; display: none; /* Sembunyi sebelum diputar */
-            animation: slideDown 0.6s ease-out;
+            width: 100%; max-width: 920px; display: none;
+            animation: slideDown 0.5s cubic-bezier(.2,.8,.2,1);
+            margin-bottom: 10px;
         }
         @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity:0; transform: translateY(-24px) scale(0.98); }
+            to { opacity:1; transform: translateY(0) scale(1); }
+        }
+
+        .player-glass {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px; overflow: hidden;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.08);
+            padding: 3px;
         }
         .player-wrapper {
-            position: relative; padding-top: 56.25%; /* 16:9 Aspect Ratio */
-            background: black; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative; padding-top: 56.25%;
+            border-radius: 15px; overflow: hidden;
+            background: #000;
         }
-        .player-wrapper iframe {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        .player-wrapper iframe { position: absolute; top:0; left:0; width:100%; height:100%; border:none; }
+
+        #playing-title {
+            margin: 16px 4px 6px;
+            font-size: 18px; font-weight: 600; line-height: 1.4;
+            color: rgba(255,255,255,0.92);
         }
 
-        /* GRID VIDEO HASIL */
+        /* ── RESULTS LABEL ── */
+        .results-label {
+            width: 100%; max-width: 1200px;
+            display: none; align-items: center; gap: 10px;
+            margin: 20px 0 16px; font-size: 13px;
+            color: var(--text-muted); font-weight: 500; letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .results-label::after {
+            content: ''; flex: 1; height: 1px;
+            background: linear-gradient(90deg, var(--glass-border), transparent);
+        }
+
+        /* ── VIDEO GRID ── */
         .results-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px; width: 100%; max-width: 1200px; margin-top: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+            gap: 18px;
+            width: 100%; max-width: 1200px;
         }
-        .video-card {
-            cursor: pointer; transition: transform 0.3s;
-            animation: fadeIn 0.8s ease;
-        }
-        .video-card:hover { transform: scale(1.05); }
-        .video-card img { width: 100%; border-radius: 12px; margin-bottom: 10px; }
-        .video-card h3 { font-size: 14px; color: #fff; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .video-card p { font-size: 12px; color: #aaa; margin-top: 5px; }
 
-        @keyframes fadeIn {
-            from { opacity: 0; } to { opacity: 1; }
+        /* ── VIDEO CARD ── */
+        .video-card {
+            cursor: pointer;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px; overflow: hidden;
+            backdrop-filter: blur(16px);
+            transition: transform 0.3s cubic-bezier(.2,.8,.2,1), box-shadow 0.3s ease, border-color 0.3s ease;
+            animation: cardIn 0.5s cubic-bezier(.2,.8,.2,1) both;
+            position: relative;
+        }
+        .video-card::before {
+            content: ''; position: absolute; inset: 0; border-radius: 14px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 60%);
+            pointer-events: none; z-index: 1;
+        }
+        @keyframes cardIn {
+            from { opacity:0; transform: translateY(20px) scale(0.97); }
+            to { opacity:1; transform: translateY(0) scale(1); }
+        }
+        .video-card:hover {
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,59,59,0.25);
+            border-color: rgba(255,59,59,0.3);
+        }
+
+        .thumb-wrap {
+            position: relative; overflow: hidden;
+        }
+        .thumb-wrap img {
+            width: 100%; aspect-ratio: 16/9; object-fit: cover;
+            display: block; transition: transform 0.4s ease;
+        }
+        .video-card:hover .thumb-wrap img { transform: scale(1.06); }
+
+        .play-overlay {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,0); display: flex; align-items: center; justify-content: center;
+            transition: background 0.3s ease;
+        }
+        .play-btn {
+            width: 52px; height: 52px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; opacity: 0; transform: scale(0.6);
+            transition: all 0.3s cubic-bezier(.2,.8,.2,1);
+            box-shadow: 0 8px 24px rgba(255,59,59,0.5);
+        }
+        .video-card:hover .play-overlay { background: rgba(0,0,0,0.4); }
+        .video-card:hover .play-btn { opacity: 1; transform: scale(1); }
+
+        .card-body { padding: 12px 14px 14px; position: relative; z-index: 2; }
+        .card-body h3 {
+            font-size: 13.5px; font-weight: 600;
+            color: rgba(255,255,255,0.9); line-height: 1.45;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .card-body .channel {
+            font-size: 12px; color: var(--text-muted); margin-top: 6px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .channel-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            flex-shrink: 0;
+        }
+
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,59,59,0.5); }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 680px) {
+            nav { padding: 10px 16px; flex-wrap: wrap; gap: 10px; }
+            .search-container { width: 100%; order: 3; }
+            .nav-right { display: none; }
+            #hero h1 { font-size: 28px; }
         }
     </style>
 </head>
 <body>
 
-    <div id="loader-bar"></div>
+<div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+</div>
 
-    <nav>
-        <div class="logo">Nachyn<span>Tube</span></div>
-        <div class="search-container">
-            <input type="text" id="search-input" placeholder="Cari video...">
-            <button onclick="searchVideo()">Cari</button>
-        </div>
-        <div style="width: 100px;"></div> </nav>
+<div id="loader-bar"></div>
 
-    <div class="container">
-        <div id="video-display">
-            <div class="player-wrapper" id="player"></div>
-            <h2 id="playing-title" style="margin: 15px 0 30px 0; font-size: 20px;"></h2>
-        </div>
+<nav>
+    <div class="logo">
+        <span class="logo-nachyn">Nachyn</span>
+        <span class="logo-tube">Tube</span>
+    </div>
+    <div class="search-container">
+        <input type="text" id="search-input" placeholder="Cari video...">
+        <button onclick="searchVideo()">&#9906; Cari</button>
+    </div>
+    <div class="nav-right"></div>
+</nav>
 
-        <div class="results-grid" id="results"></div>
+<div class="container">
+    <div id="hero">
+        <div class="hero-icon">▶</div>
+        <h1>Selamat Datang di <span>NachynTube</span></h1>
+        <p>Cari video favoritmu dan nikmati streaming tanpa batas</p>
     </div>
 
-    <script>
-        // GANTI DENGAN API KEY LO DI SINI
-        const API_KEY = 'AIzaSyDcY-7czDHgxYjCe6wvjZhusV-4DSBXGkM';
+    <div id="video-display">
+        <div class="player-glass">
+            <div class="player-wrapper" id="player"></div>
+        </div>
+        <h2 id="playing-title"></h2>
+    </div>
 
-        const loader = document.getElementById('loader-bar');
+    <div class="results-label" id="results-label">Hasil Pencarian</div>
+    <div class="results-grid" id="results"></div>
+</div>
 
-        function showLoading() {
-            loader.style.width = '30%';
-            setTimeout(() => { loader.style.width = '70%'; }, 200);
-        }
+<script>
+    const API_KEY = 'AIzaSyDcY-7czDHgxYjCe6wvjZhusV-4DSBXGkM';
+    const loader = document.getElementById('loader-bar');
 
-        function hideLoading() {
-            loader.style.width = '100%';
-            setTimeout(() => { loader.style.width = '0%'; }, 400);
-        }
+    function showLoading() {
+        loader.style.width = '30%';
+        setTimeout(() => { loader.style.width = '72%'; }, 200);
+    }
+    function hideLoading() {
+        loader.style.width = '100%';
+        setTimeout(() => { loader.style.width = '0%'; }, 450);
+    }
 
-        async function searchVideo() {
-            const query = document.getElementById('search-input').value;
-            if (!query) return;
+    async function searchVideo() {
+        const query = document.getElementById('search-input').value.trim();
+        if (!query) return;
 
-            showLoading();
+        showLoading();
+        document.getElementById('hero').style.display = 'none';
+        document.getElementById('results-label').style.display = 'flex';
 
-            try {
-                const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=12&q=${query}&type=video&key=${API_KEY}`;
-                const response = await fetch(url);
-                const data = await response.json();
+        try {
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=12&q=${encodeURIComponent(query)}&type=video&key=${API_KEY}`;
+            const response = await fetch(url);
+            const data = await response.json();
 
-                const resultsDiv = document.getElementById('results');
-                resultsDiv.innerHTML = '';
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
 
-                data.items.forEach(item => {
-                    const card = document.createElement('div');
-                    card.className = 'video-card';
-                    card.innerHTML = `
-                        <img src="${item.snippet.thumbnails.high.url}" alt="thumb">
+            if (!data.items || data.items.length === 0) {
+                resultsDiv.innerHTML = '<p style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:40px 0;">Tidak ada hasil ditemukan.</p>';
+                hideLoading(); return;
+            }
+
+            data.items.forEach((item, i) => {
+                const card = document.createElement('div');
+                card.className = 'video-card';
+                card.style.animationDelay = `${i * 0.05}s`;
+                card.innerHTML = `
+                    <div class="thumb-wrap">
+                        <img src="${item.snippet.thumbnails.high.url}" alt="thumbnail" loading="lazy">
+                        <div class="play-overlay"><div class="play-btn">▶</div></div>
+                    </div>
+                    <div class="card-body">
                         <h3>${item.snippet.title}</h3>
-                        <p>${item.snippet.channelTitle}</p>
-                    `;
-                    card.onclick = () => playVideo(item.id.videoId, item.snippet.title);
-                    resultsDiv.appendChild(card);
-                });
-            } catch (error) {
-                alert("Gagal mengambil data. Cek API Key lo!");
-            }
-
-            hideLoading();
+                        <div class="channel"><span class="channel-dot"></span>${item.snippet.channelTitle}</div>
+                    </div>`;
+                card.onclick = () => playVideo(item.id.videoId, item.snippet.title);
+                resultsDiv.appendChild(card);
+            });
+        } catch (e) {
+            alert("Gagal mengambil data. Cek API Key!");
         }
+        hideLoading();
+    }
 
-        function playVideo(id, title) {
-            showLoading();
-            
-            const display = document.getElementById('video-display');
-            const player = document.getElementById('player');
-            const titleElem = document.getElementById('playing-title');
+    function playVideo(id, title) {
+        showLoading();
 
-            display.style.display = 'block';
-            titleElem.innerText = title;
+        const display = document.getElementById('video-display');
+        const player = document.getElementById('player');
 
-            player.innerHTML = `
-                <iframe src="https://www.youtube.com/embed/${id}?autoplay=1&rel=0" 
-                    frameborder="0" allow="autoplay; encrypted-media" allowfullscreen>
-                </iframe>
-            `;
+        display.style.display = 'block';
+        // Re-trigger animation
+        display.style.animation = 'none';
+        void display.offsetWidth;
+        display.style.animation = 'slideDown 0.5s cubic-bezier(.2,.8,.2,1)';
 
-            // Scroll ke atas otomatis pas klik video
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+        document.getElementById('playing-title').innerText = title;
+        player.innerHTML = `<iframe src="https://www.youtube.com/embed/${id}?autoplay=1&rel=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
 
-            hideLoading();
-        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        hideLoading();
+    }
 
-        // Fitur Enter untuk Search
-        document.getElementById('search-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                searchVideo();
-            }
-        });
-    </script>
+    document.getElementById('search-input').addEventListener('keypress', e => {
+        if (e.key === 'Enter') searchVideo();
+    });
+</script>
 </body>
 </html>
